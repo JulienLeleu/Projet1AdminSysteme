@@ -16,7 +16,7 @@ OPTIONS
 
 	-h | --help
 		Permet d'obtenir de l'aide.
-		
+
 	-n OPTION(S)
 		Affiche une courte description de(s) (l')option(s) passé en paramètre(s).
 
