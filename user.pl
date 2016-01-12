@@ -1,10 +1,22 @@
 #!/usr/bin/perl -w
 # Explications claires : http://www.commentcamarche.net/contents/646-linux-gestion-des-utilisateurs
 
+my %args = ();
+
 my $FICHIER_PASSWORD = 'passwd';
 my $FICHIER_GROUP = 'group';
 my $MAX_GID = 50000;
 my $DEFAULT_GID = 50;
+
+sub getArgs {
+	%args = @_;
+	#verification des arguments
+	foreach	my $k (keys(%args)) {
+		if ($k !~ m/^-(.+)/) {
+			die "option inconnue : $k\n";
+		}
+	}
+}
 
 # containsOpt(@Tableau, $option)
 sub containsOpt {
@@ -55,6 +67,18 @@ sub getGid {
 }
 
 
+getArgs(@ARGV);
+foreach my $k (keys(%args)) {
+	print "$k ==> $args{$k}\n";
+}
+
+#TODO
+#faire une map et demander à l'utilisateur uniquement les valeurs indéfinies
+#==> traiter en dernier la commande -add
+#Faire un fichier useradd.pl et userdel.pl
+
+
+=pod
 if (containsOpt(@ARGV, '-n')) {
 	if (containsOpt(@ARGV, '-add')) {
 		print "Utilisation : ./user.pl -add <login>\n";
@@ -102,7 +126,7 @@ if (containsOpt(@ARGV, '-n')) {
 		print "Option inconnue\n";
 	}
 }
-=pod
+
 Ajout de l'utilisateur « test » ...
 Ajout du nouveau groupe « test » (1001) ...
 Ajout du nouvel utilisateur « test » (1001) avec le groupe « test » ...

@@ -1,0 +1,36 @@
+USERADD		Commandes de gestion du système
+
+NOM
+	useradd - créer un nouvel utilisateur ou modifier les informations par défaut appliquées aux nouveaux utilisateurs
+
+SYNOPSIS
+	./useradd.pl [options] LOGIN
+
+DESCRIPTION
+	Quand elle est invoquée sans options, la commande ./useradd.pl utilise les valeurs indiquées sur la ligne de commande et les valeurs par défaut du système
+
+	Par défaut, un groupe sera également créé pour le nouvel utlisateur
+
+OPTIONS
+	Les options disponibles pour la commande useradd sont :
+
+	-h | --help
+		Permet d'obtenir de l'aide.
+		
+	-n OPTION(S)
+		Affiche une courte description de(s) (l')option(s) passé en paramètre(s).
+
+	--home DIR
+		Utilise REP (et le créé) comme repertoire personnel de l'utilisateur.
+
+	--shell SHELL
+		Utilise SHELL comme programme de boot.
+
+	--uid ID
+		Force le nouvel identifiant utilisateur à un entier donné. Echouera si l'uid existe déjà.
+
+	--gid ID
+		Lorsqu'un utilisateur est créé, cette option place cet utilisateur dans ce groupe.
+FICHIERS
+	adduser.conf
+		Fichier de configuration de useradd
