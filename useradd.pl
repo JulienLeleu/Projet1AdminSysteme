@@ -114,7 +114,10 @@ else {
 		}
 	}
 	else {
-		# On récupère le login (dernier argument)
+		# récupérer les options => stocker dans un tableau
+		# récupérer les utilisateurs => stocker dans tableau
+
+		# On récupère les logins (dernier argument)
 		$login = pop @ARGV;
 		# Récupération des options
 		getArgs(@ARGV);
