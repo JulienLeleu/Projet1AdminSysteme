@@ -1,12 +1,14 @@
 #!/usr/bin/perl -w
 # Explications claires : http://www.commentcamarche.net/contents/646-linux-gestion-des-utilisateurs
+my $MIN_UID = 1000;
+my $MIN_GID = 1000;
 
 # Informations de l'utilisateur avec valeurs par défaut
 my %user = (
 	login => undef,
 	password => undef,
-	uid => undef,
-	gid => 50,
+	uid => getUid($MIN_UID),
+	gid => getGid($MIN_GID),
 	infos => undef,
 	home => '/home/',
 	shell => '/bin/bash'
@@ -71,13 +73,28 @@ sub getUser {
 	$user{login} = <STDIN>;
 	chomp $user{login};
 	print "Ajout de l'utilisateur « $user{login} » ...\n";
+	$user{password} = getPassword();
+	if (exists $args{"--uid"}) {
+		$user{uid} = getUid($user{uid});
+	}
+	print "Ajout de l'uid ($user{uid})\n";
+	if (exists $args{"--gid"}) {
+		$user{gid} = getGid($user{gid});
+	}
+	print "Ajout du nouvel utilisateur « $user{login} » ($user{uid}) avec le groupe ($user{gid})\n";
+	print "Informations relatives à l'utilisateur $user{login} :\n";
+	$user{infos} = <STDIN>;
+	chomp $user{infos};
 	if (!exists $args{"--home"}) {
 		$user{home} = $user{home} . $user{login};
 	}
 	print "Création du répertoire personnel « $user{home} »...\n";
-
-	$user{password} = getPassword();
-
+	if (!exists $args{"--shell"}) {
+		print "Shell : \n";
+		$user{shell} = <STDIN>;
+		chomp $user{shell};
+	}
+	print "Création du repertoire bash « $user{shell} »...\n";
 }
 
 sub getPassword {
@@ -97,6 +114,22 @@ sub getPassword {
 	} while ($password1 ne $ password2);
 	system("stty echo");
 	return chomp $password1;
+}
+
+sub getUid {
+	my $UID = shift;
+	while(getpwuid($UID)) {
+		$UID++;
+	}
+	return $UID;
+}
+
+sub getGid {
+	my $GID = shift;
+	while(getgrgid($GID)) {
+		$GID++;
+	}
+	return $GID;
 }
 
 # Si l'utilisateur fait ./useradd.pl --help
@@ -119,7 +152,7 @@ else {
 	}
 	else {
 		# On récupère le nombre d'utilisateurs (> 0)
-		$nbUsers = pop @ARGV;
+		my $nbUsers = pop @ARGV;
 		if ($nbUsers < 1) {
 			die "Nombre d'utilisateurs incorrect : $nbUsers";
 		}
