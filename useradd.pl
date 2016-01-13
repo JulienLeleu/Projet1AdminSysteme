@@ -59,7 +59,7 @@ sub displayFile {
 sub getUser {
 	# vérifier les options, les insérer dans user
 	foreach my $key (keys(%args)) {
-		$value = $args{$key};
+		my $value = $args{$key};
 		# si l'option existe, on range la valeur dans l'utilisateur
 		if (defined $helpCommands{$key}) {
 			# on supprime le "--" devant l'option
@@ -67,7 +67,9 @@ sub getUser {
 			$user{$key}=$value;
 		}
 	}
-	$user{login}=$_[0];
+	print "Indiquez votre nom d'utilisateur :\n";
+	$user{login} = <STDIN>;
+	chomp $user{login};
 	print "Ajout de l'utilisateur « $user{login} » ...\n";
 	if (!exists $args{"--home"}) {
 		$user{home} = $user{home} . $user{login};
@@ -80,6 +82,8 @@ sub getUser {
 
 sub getPassword {
 	system("stty -echo");
+	my $password1 = undef;
+	my $password2 = undef;
 	do {
 		if(defined $password1) {
 			print "Erreur : Mots de passes différents\n";
@@ -92,7 +96,7 @@ sub getPassword {
 		print "\n";
 	} while ($password1 ne $ password2);
 	system("stty echo");
-	return $password1;
+	return chomp $password1;
 }
 
 # Si l'utilisateur fait ./useradd.pl --help
@@ -114,15 +118,20 @@ else {
 		}
 	}
 	else {
-		# récupérer les options => stocker dans un tableau
-		# récupérer les utilisateurs => stocker dans tableau
-
-		# On récupère les logins (dernier argument)
-		$login = pop @ARGV;
+		# On récupère le nombre d'utilisateurs (> 0)
+		$nbUsers = pop @ARGV;
+		if ($nbUsers < 1) {
+			die "Nombre d'utilisateurs incorrect : $nbUsers";
+		}
 		# Récupération des options
 		getArgs(@ARGV);
 		# Récupère les infos
-		getUser($login);
+		my $i=0;
+		while ($i++ < $nbUsers) {
+			print "User($i) : ";
+			getUser();
+			$nbUsers--;
+		}
 
 		## A supprimer
 		foreach my $k (keys(%args)) {

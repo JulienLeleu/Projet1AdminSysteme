@@ -4,7 +4,7 @@ NOM
 	useradd - créer un nouvel utilisateur ou modifier les informations par défaut appliquées aux nouveaux utilisateurs
 
 SYNOPSIS
-	./useradd.pl [options] LOGIN
+	./useradd.pl [options] NUMBERUSERS
 
 DESCRIPTION
 	Quand elle est invoquée sans options, la commande ./useradd.pl utilise les valeurs indiquées sur la ligne de commande et les valeurs par défaut du système
