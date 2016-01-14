@@ -1,13 +1,8 @@
 #!/usr/bin/perl -w
 
-use Getopt::Long;
+use Digest::SHA qw(sha512);
 
-my $n = '';
-my $add = '';
-print @ARGV . "\n";
-GetOptions (
-	'n' => \$n,
-	'add=s' => $add
-);
-print $add . "\n";
-print @ARGV . "\n";
+print "mdp : \n";
+$mdp = <>;
+$mdpCrypted = unpack("H*", sha512($mdp));
+print "$mdpCrypted\n";

@@ -66,21 +66,60 @@ sub getUsers {
 sub add { # (login)
 	my %currUser = ();
 	$currUser{login} = shift;
-	#$currUser{password} = getCryptedPassword();
-	(defined $opts{uid}) ? ($currUser{uid} = $opts{uid}) : ($currUser{uid} = $defaultUser{uid});
-	(defined $opts{gid}) ? ($currUser{gid} = $opts{gid}) : ($currUser{gid} = $defaultUser{gid});
-	(defined $opts{infos}) ? ($currUser{infos} = $opts{infos}) : ($currUser{infos} = $defaultUser{infos});
-	(defined $opts{home}) ? ($currUser{home} = $opts{home}) : ($currUser{home} = $defaultUser{home} . $currUser{login});
-	(defined $opts{shell}) ? ($currUser{shell} = $opts{shell}) : ($currUser{shell} = $defaultUser{shell});
-		
+	if (! getpwnam($currUser{login})) {
+		$currUser{password} = getCryptedPassword("test");
+		(defined $opts{uid}) ? ($currUser{uid} = getUid($opts{uid})) : ($currUser{uid} = getUid($defaultUser{uid}));
+		(defined $opts{gid}) ? ($currUser{gid} = getGid($opts{gid})) : ($currUser{gid} = getGid($defaultUser{gid}));
+		(defined $opts{infos}) ? ($currUser{infos} = $opts{infos}) : ($currUser{infos} = $defaultUser{infos});
+		(defined $opts{home}) ? ($currUser{home} = $opts{home}) : ($currUser{home} = $defaultUser{home} . $currUser{login});
+		(defined $opts{shell}) ? ($currUser{shell} = $opts{shell}) : ($currUser{shell} = $defaultUser{shell});
+
+		#print "$currUser{login}:x:$currUser{uid}:$currUser{gid}:$currUser{home}:$currUser{shell}\n";
+		addEntryToFile($FILE_PASSWORD, "$currUser{login}:x:$currUser{uid}:$currUser{gid}:$currUser{home}:$currUser{shell}");
+		addEntryToFile($FILE_SHADOW, "$currUser{login}:$currUser{password}:" . sprintf("%.0f", time/86400) . ":0:99999:7:::");
+		addEntryToFile($FILE_GROUP, "$currUser{login}:x:$currUser{gid}");
+		mkdir $currUser{home} or die "mkdir $currUser{home} : $!";
+	}
+	else {
+		print "Nom d'utilisateur déjà utilisé\n";
+	}
 }
+
+# Crypte le mot de passe passé en paramètre
+sub getCryptedPassword { # (password)
+	$password = shift;
+	return unpack("H*", sha512($password));
+}
+
+# Retourne le premier Uid disponible après celui demandé
+sub getUid # (uid)
+{
+	my $uid = shift;
+	while(getpwuid($uid)) {
+		$uid++;
+	}
+	return $uid;
+}
+
+# Retourne le premier Gid disponible après celui demandé
+sub getGid # (gid)
+{
+	my $gid = shift;
+	while(getgrgid($gid)) {
+		$gid++;
+	}
+	return $gid;
+}
+
 
 # Ajoute une nouvelle ligne au fichier spécifié
 sub addEntryToFile { # (file, line)
 	my $file = shift;
-	my $line = shift;
+	my $line = shift . "\n";
 
-	
+	open(WRITER, ">> $file") or die "open $file : $!";
+	print WRITER $line;
+	close(WRITER);
 }
 
 # Supprime un utilisateur
@@ -128,9 +167,12 @@ sub rmUserFromFile { # (file, login)
 	close(WRITER);
 }
 
-# "Main"
+## "Main" ##
+# Si option -n
 if (defined($opts{n})) {
+	# Pour toutes les commandes en argument
 	foreach my $k (@{$opts{n}}) {
+		# On supprime les "-" devant les arguments
 		$k =~ s/^(-*)//;
 		if (defined ($helpCommands{$k})) {
 			print "$helpCommands{$k}\n";
@@ -141,10 +183,13 @@ if (defined($opts{n})) {
 	}
 }
 else {
+	# liste des logins
 	my @users;
+	# Si un fichier contenant les logins à été spécifié
 	if (defined ($opts{users})) {
 		push(@users, getUsers($opts{users}));
 	}
+	# On insére également dans users les utilisateurs en argument
 	push(@users, @ARGV);
 	foreach my $user (@users) {
 		print "user : $user\n";
