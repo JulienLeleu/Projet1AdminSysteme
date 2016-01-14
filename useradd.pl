@@ -1,7 +1,14 @@
 #!/usr/bin/perl -w
+
+use Getopt::Long;
+
 # Explications claires : http://www.commentcamarche.net/contents/646-linux-gestion-des-utilisateurs
 my $MIN_UID = 1000;
 my $MIN_GID = 1000;
+my $FILE_HELP = 'useradd.help';
+my $FILE_PASSWORD = 'passwd';
+my $FILE_SHADOW = 'shadow';
+my $FILE_GROUP = 'group';
 
 # Informations de l'utilisateur avec valeurs par défaut
 my %user = (
@@ -21,23 +28,9 @@ my %helpCommands = (
 	"--home" => "--home DIR\nUtilise REP (et le créé) comme repertoire personnel de l'utilisateur.",
 	"--shell" => "--shell SHELL\nUtilise SHELL comme programme de boot.",
 	"--uid" => "--uid ID\nForce le nouvel identifiant utilisateur à un entier donné. Echouera si l'uid existe déjà",
-	"--gid" => "--gid ID\nLorsqu'un utilisateur est créé, cette option place cet utilisateur dans ce groupe"
+	"--gid" => "--gid ID\nLorsqu'un utilisateur est créé, cette option place cet utilisateur dans ce groupe",
+	"--users" => "--users LOGINS\nCréé les utilisateurs à partir du fichier LOGIN"
 );
-
-my $FILE_HELP = 'useradd.help';
-my $FILE_PASSWORD = 'passwd';
-my $FILE_GROUP = 'group';
-
-# Récupère les options et les rangent dans %args
-sub getArgs {
-	%args = @_;
-	#verification des arguments
-	foreach	my $k (keys(%args)) {
-		if ($k !~ m/^--(.+)/) {
-			die "option inconnue : $k\n";
-		}
-	}
-}
 
 # Retourne 1 si l'option est contenue dans le tableau passé en param
 sub containsOpt {	# @tab, $option
@@ -73,7 +66,7 @@ sub getUser {
 	$user{login} = <STDIN>;
 	chomp $user{login};
 	print "Ajout de l'utilisateur « $user{login} » ...\n";
-	$user{password} = getPassword();
+	#$user{password} = getPassword();
 	if (exists $args{"--uid"}) {
 		$user{uid} = getUid($user{uid});
 	}
@@ -86,35 +79,30 @@ sub getUser {
 	$user{infos} = <STDIN>;
 	chomp $user{infos};
 	if (!exists $args{"--home"}) {
-		$user{home} = $user{home} . $user{login};
+		$user{home} = "/home/" . $user{login};
 	}
 	print "Création du répertoire personnel « $user{home} »...\n";
-	if (!exists $args{"--shell"}) {
-		print "Shell : \n";
-		$user{shell} = <STDIN>;
-		chomp $user{shell};
-	}
 	print "Création du repertoire bash « $user{shell} »...\n";
 }
 
-sub getPassword {
-	system("stty -echo");
-	my $password1 = undef;
-	my $password2 = undef;
-	do {
-		if(defined $password1) {
-			print "Erreur : Mots de passes différents\n";
-		}
-		print "Entrez le nouveau mot de passe UNIX :\n";
-		$password1 = <STDIN>;
-		print "\n";
-		print "Retapez le nouveau mot de passe UNIX :\n";
-		$password2 = <STDIN>;
-		print "\n";
-	} while ($password1 ne $ password2);
-	system("stty echo");
-	return chomp $password1;
-}
+#sub getPassword {
+#	system("stty -echo");
+#	my $password1 = undef;
+#	my $password2 = undef;
+#	do {
+#		if(defined $password1) {
+#			print "Erreur : Mots de passes différents\n";
+#		}
+#		print "Entrez le nouveau mot de passe UNIX :\n";
+#		$password1 = <STDIN>;
+#		print "\n";
+#		print "Retapez le nouveau mot de passe UNIX :\n";
+#		$password2 = <STDIN>;
+#		print "\n";
+#	} while ($password1 ne $ password2);
+#	system("stty echo");
+#	return chomp $password1;
+#}
 
 sub getUid {
 	my $UID = shift;
@@ -130,6 +118,25 @@ sub getGid {
 		$GID++;
 	}
 	return $GID;
+}
+sub writePasswd {
+	open(WRITER, ">> $FILE_PASSWORD");
+	print WRITER "$user{login}:x:$user{uid}:$user{gid}:$user{infos}:$user{home}:$user{shell}\n";
+	close(WRITER);
+}
+
+sub writeShadow {
+	my $date = sprintf("%.0f", time/86400);
+	open(WRITER, ">> $FILE_SHADOW");
+	print WRITER "$user{login}:x:$date:0:99999:7:::\n";
+	close(WRITER);
+}
+
+sub writeGroup {
+	#login:x:gid:
+	open(WRITER, ">> $FILE_GROUP");
+	print WRITER "$user{login}:x:$user{gid}:\n";
+	close(WRITER);
 }
 
 # Si l'utilisateur fait ./useradd.pl --help
@@ -157,18 +164,28 @@ else {
 			die "Nombre d'utilisateurs incorrect : $nbUsers";
 		}
 		# Récupération des options
-		getArgs(@ARGV);
+		GetOptions (
+			'home=s' => \$args{home},
+			'shell=s' => \$args{shell},
+			'uid=i' => \$args{uid},
+			'gid=i' => \$args{gid},
+			'users=s' => \$args{users}
+		);
+		
 		# Récupère les infos
 		my $i=0;
 		while ($i++ < $nbUsers) {
 			print "User($i) : ";
 			getUser();
+			writePasswd();
+			writeShadow();
+			writeGroup();
+			system("passwd -r $FILE_SHADOW $user{login}");
 			$nbUsers--;
 		}
-
 		## A supprimer
-		foreach my $k (keys(%args)) {
-			print "$k ==> $args{$k}\n";
-		}
+		#foreach my $k (keys(%args)) {
+		#	print "$k ==> $args{$k}\n";
+		#}
 	}
 }
