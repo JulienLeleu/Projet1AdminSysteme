@@ -1,6 +1,7 @@
 #!/usr/bin/perl -w
 
 use Getopt::Long;
+use File::Copy qw/ copy /;
 use File::Path qw(make_path remove_tree);
 
 # Explications claires : http://www.commentcamarche.net/contents/646-linux-gestion-des-utilisateurs
@@ -31,7 +32,7 @@ GetOptions (
 my %defaultUser = (
 	uid => 1000,
 	gid => 1000,
-	infos => 't',
+	infos => '',
 	home => '/home/', # + login
 	shell => '/bin/bash'
 );
@@ -75,10 +76,11 @@ sub add { # (login)
 		(defined $opts{shell}) ? ($currUser{shell} = $opts{shell}) : ($currUser{shell} = $defaultUser{shell});
 
 		#print "$currUser{login}:x:$currUser{uid}:$currUser{gid}:$currUser{home}:$currUser{shell}\n";
-		addEntryToFile($FILE_PASSWORD, "$currUser{login}:x:$currUser{uid}:$currUser{gid}:$currUser{home}:$currUser{shell}");
+		addEntryToFile($FILE_PASSWORD, "$currUser{login}:x:$currUser{uid}:$currUser{gid}:currUser{infos}:$currUser{home}:$currUser{shell}");
 		addEntryToFile($FILE_SHADOW, "$currUser{login}:$currUser{password}:" . sprintf("%.0f", time/86400) . ":0:99999:7:::");
 		addEntryToFile($FILE_GROUP, "$currUser{login}:x:$currUser{gid}");
 		mkdir $currUser{home} or die "mkdir $currUser{home} : $!";
+		#copy('/etc/skel/.bash*', $currUser{home}) or die "Copy : $!";
 	}
 	else {
 		print "Nom d'utilisateur déjà utilisé\n";
@@ -88,7 +90,7 @@ sub add { # (login)
 # Crypte le mot de passe passé en paramètre
 sub getCryptedPassword { # (password)
 	$password = shift;
-	return unpack("H*", sha512($password));
+	return crypt($password,'$6$sOmEsAlT');
 }
 
 # Retourne le premier Uid disponible après celui demandé
@@ -142,7 +144,7 @@ sub rmDirectory { # (directory)
 	$directory = shift;
 	# On vérifie que le dossier existe
 	if(-e $directory) {
-		print "Suppresion du repertoire $directory ...\n";
+		print "Suppression du repertoire $directory ...\n";
 		remove_tree($directory) or die "remove_tree : $!";
 	}
 	else {
@@ -197,7 +199,7 @@ else {
  			add $user;
 		}
 		elsif (defined ($opts{modify})) {
-
+			print "Modification de l'utilisateur $user\n";
 		}
 		elsif (defined ($opts{remove})) {
 			print "Etes-vous sûr de supprimer l'utilisateur $user ?[O/N]\n";
