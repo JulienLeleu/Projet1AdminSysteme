@@ -9,7 +9,7 @@ use File::Path qw(make_path remove_tree);
 # http://www.linux-perl-c.lami20j.fr/contenu/affiche-linux_tuto-4-creation-manuelle-d-un-utilisateur-:-le-mecanisme.html#top
 my $MIN_UID = 1000;
 my $MIN_GID = 1000;
-my $FILE_HELP = 'useradd.help';
+my $FILE_HELP = 'user.help';
 my $FILE_PASSWORD = 'passwd';
 my $FILE_SHADOW = 'shadow';
 my $FILE_GROUP = 'group';
@@ -21,6 +21,7 @@ GetOptions (
 	'add' => \$opts{add},
 	'modify' => \$opts{modify},
 	'remove' => \$opts{remove},
+	'help' => \$opts{help},
 	'home=s' => \$opts{home},
 	'shell=s' => \$opts{shell},
 	'infos=s' => \$opts{infos},
@@ -150,7 +151,7 @@ sub addEntryToFile { # (file, line)
 sub modify {
 	my %currUser = ();
 	$currUser{login} = shift;
-	#if (getpwnam($currUser{login})) {
+	if (getpwnam($currUser{login})) {
 		# On demande à l'utilisateur de s'authentifier
 		print "Veuillez saisir le mot de passe actuel :\n";
 		$currUser{password} = <STDIN>;
@@ -163,7 +164,15 @@ sub modify {
 				$currUser{password} = getCryptedPassword(getPassword());
 				modifyShadow($currUser{login}, $currUser{password});
 			}
-			(defined $opts{home}) ? ($currUser{home} = $opts{home}) : ($currUser{home} = undef);
+			if (defined $opts{home}) {
+				$currUser{home} = $opts{home};
+				my @infos = getpwnam($currUser{login});
+				my $oldDirectory = $infos[7];
+				move($oldDirectory, $currUser{home}) or die "move $oldDirectory -> $currUser{home} : $!";
+			} 
+			else {
+				$currUser{home} = undef;
+			}
 			(defined $opts{shell}) ? ($currUser{shell} = $opts{shell}) : ($currUser{home} = undef);
 			modifyPasswd($currUser{login}, $currUser{home}, $currUser{shell});
 		}
@@ -171,10 +180,10 @@ sub modify {
 			print "Abandon de la modification de $currUser{login} : Mot de passe incorrect\n";
 		}
 			
-	#}
-	#else {
-	#	print "Utilisateur inconnu\n";
-	#}
+	}
+	else {
+		print "Utilisateur inconnu\n";
+	}
 }
 
 # Retourne le mot de passe crypté
@@ -268,6 +277,16 @@ sub rmUserFromFile { # (file, login)
 	close(WRITER);
 }
 
+# Affiche le contenu du fichier passé en paramètre
+sub displayFile { # (file)
+	my $file = shift;
+	open (READER, "< $file");
+	while(<READER>) {
+		print;
+	}
+	close(READER);
+}
+
 ## "Main" ##
 # Si option -n
 if (defined($opts{n})) {
@@ -282,6 +301,9 @@ if (defined($opts{n})) {
 			print "Option inconnue\n";
 		}
 	}
+}
+elsif (defined ($opts{help})) {
+	displayFile($FILE_HELP);
 }
 else {
 	# liste des logins
@@ -309,9 +331,6 @@ else {
 				remove $user;
 				print "Suppression de $user effectuée avec succés\n";
 			}
-		}
-		elsif (defined ($opts{help})) {
-
 		}
 		else {
 			print "Erreur d'utilisation. Usage : ./user <commande> [OPTIONS] login1 login2 ...\n";
