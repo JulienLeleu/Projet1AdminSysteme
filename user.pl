@@ -2,6 +2,7 @@
 
 use Getopt::Long;
 use File::Copy qw/ copy /;
+use File::Copy 'move';
 use File::Path qw(make_path remove_tree);
 
 # Explications claires : http://www.commentcamarche.net/contents/646-linux-gestion-des-utilisateurs
@@ -68,7 +69,7 @@ sub add { # (login)
 	my %currUser = ();
 	$currUser{login} = shift;
 	if (! getpwnam($currUser{login})) {
-		$currUser{password} = getCryptedPassword("test");
+		$currUser{password} = getCryptedPassword(getPassword());
 		(defined $opts{uid}) ? ($currUser{uid} = getUid($opts{uid})) : ($currUser{uid} = getUid($defaultUser{uid}));
 		(defined $opts{gid}) ? ($currUser{gid} = getGid($opts{gid})) : ($currUser{gid} = getGid($defaultUser{gid}));
 		(defined $opts{infos}) ? ($currUser{infos} = $opts{infos}) : ($currUser{infos} = $defaultUser{infos});
@@ -76,15 +77,37 @@ sub add { # (login)
 		(defined $opts{shell}) ? ($currUser{shell} = $opts{shell}) : ($currUser{shell} = $defaultUser{shell});
 
 		#print "$currUser{login}:x:$currUser{uid}:$currUser{gid}:$currUser{home}:$currUser{shell}\n";
+		mkdir $currUser{home} or die "mkdir $currUser{home} : $!";
+		copy('/etc/skel/.bash*', $currUser{home}); # or die "Copy : $!";
 		addEntryToFile($FILE_PASSWORD, "$currUser{login}:x:$currUser{uid}:$currUser{gid}:currUser{infos}:$currUser{home}:$currUser{shell}");
 		addEntryToFile($FILE_SHADOW, "$currUser{login}:$currUser{password}:" . sprintf("%.0f", time/86400) . ":0:99999:7:::");
-		addEntryToFile($FILE_GROUP, "$currUser{login}:x:$currUser{gid}");
-		mkdir $currUser{home} or die "mkdir $currUser{home} : $!";
-		#copy('/etc/skel/.bash*', $currUser{home}) or die "Copy : $!";
+		addEntryToFile($FILE_GROUP, "$currUser{login}:x:$currUser{gid}");		
 	}
 	else {
 		print "Nom d'utilisateur déjà utilisé\n";
 	}
+}
+
+# Demande à l'utilisateur son mdp
+sub getPassword {
+	system("stty -echo");
+	my $password1 = undef;
+	my $password2 = undef;
+	do {
+		if(defined $password1) {
+			print "Erreur : Mots de passes différents\n";
+		}
+		print "Entrez le nouveau mot de passe UNIX :\n";
+		$password1 = <STDIN>;
+		print "\n";
+		print "Retapez le nouveau mot de passe UNIX :\n";
+		$password2 = <STDIN>;
+		print "\n";
+		chomp $password1;
+		chomp $password2;
+	} while ($password1 ne $ password2);
+	system("stty echo");
+	return $password1;
 }
 
 # Crypte le mot de passe passé en paramètre
@@ -122,6 +145,82 @@ sub addEntryToFile { # (file, line)
 	open(WRITER, ">> $file") or die "open $file : $!";
 	print WRITER $line;
 	close(WRITER);
+}
+
+sub modify {
+	my %currUser = ();
+	$currUser{login} = shift;
+	#if (getpwnam($currUser{login})) {
+		# On demande à l'utilisateur de s'authentifier
+		print "Veuillez saisir le mot de passe actuel :\n";
+		$currUser{password} = <STDIN>;
+		chomp $currUser{password};
+		if (getCryptedPassword($currUser{password}) eq getPasswordFromShadow($currUser{login})) {
+			print "Modifier le mot de passe ?[O/N]\n";
+			my $choice = <STDIN>;
+			chomp $choice;
+			if ($choice eq "O" or $choice eq "o") {
+				$currUser{password} = getCryptedPassword(getPassword());
+				modifyShadow($currUser{login}, $currUser{password});
+			}
+			(defined $opts{home}) ? ($currUser{home} = $opts{home}) : ($currUser{home} = undef);
+			(defined $opts{shell}) ? ($currUser{shell} = $opts{shell}) : ($currUser{home} = undef);
+			modifyPasswd($currUser{login}, $currUser{home}, $currUser{shell});
+		}
+		else {
+			print "Abandon de la modification de $currUser{login} : Mot de passe incorrect\n";
+		}
+			
+	#}
+	#else {
+	#	print "Utilisateur inconnu\n";
+	#}
+}
+
+# Retourne le mot de passe crypté
+sub getPasswordFromShadow { # (login)
+	my $login = shift;
+	open(READER, "< $FILE_SHADOW") or die "open $FILE_SHADOW : $!";
+	my @contents = <READER>;
+	close(READER);
+	@contents = grep (/^$login:/, @contents);
+	my @password = split(':', $contents[0]);
+	return $password[1];
+}
+
+# Modifie le mot de passe dans le fichier shadow
+sub modifyShadow { # (login, password)
+	my $login = shift;
+	my $password = shift;
+
+	open (READER, "< $FILE_SHADOW");
+	my @contents = <READER>;
+	close (READER);
+	chomp @contents;
+	@line = split (':', (grep(/^$login:.*/, @contents))[0]);
+	$line[1] = $password;
+	print join (':', @line) . "\n";
+	rmUserFromFile($FILE_SHADOW, $login);
+	addEntryToFile($FILE_SHADOW, join (':', @line) . ':::');
+}
+
+# Modifie les infos dans le fichier passwd
+sub modifyPasswd { # (login, home, shell)
+	my $login = shift;
+	my $home = shift;
+	my $shell = shift;
+	
+	open (READER, "< $FILE_PASSWORD");
+	my @contents = <READER>;
+	close (READER);
+	chomp @contents;
+	@line = split (':', (grep(/^$login:.*/, @contents))[0]);
+	
+	(defined $home) ? ($line[5] = $home) : ();
+	(defined $shell) ? ($line[6] = $shell) : ();
+
+	rmUserFromFile($FILE_PASSWORD, $login);
+	addEntryToFile($FILE_PASSWORD, join (':', @line));
 }
 
 # Supprime un utilisateur
@@ -200,6 +299,7 @@ else {
 		}
 		elsif (defined ($opts{modify})) {
 			print "Modification de l'utilisateur $user\n";
+			modify $user;
 		}
 		elsif (defined ($opts{remove})) {
 			print "Etes-vous sûr de supprimer l'utilisateur $user ?[O/N]\n";
