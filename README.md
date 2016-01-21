@@ -27,7 +27,7 @@
 
 ----------------------
 
-### Liste des fonctionnalités (TODO List) :
+### Liste des fonctionnalités implémentées :
 
 - [x] Ajout utilisateur(s)
  - [x] En ligne de commande
@@ -56,8 +56,8 @@
     - Répertoire personnel : **/home/<login>**
     - Langage de commande : **/bin/bash**
     - Infos : **''**
-    - Uid : attribution automatique
-    - Gid : attribution automatique
+    - UID : attribution automatique
+    - GID : attribution automatique
 
     Pour ajouter un ou plusieurs utilisateur(s) en ligne de commande, vous pouvez ajouter les logins directement avec les valeurs par défaut.
 
@@ -75,35 +75,30 @@
 
 - #### Suppression d'un utilisateur :
 
-  Pour supprimer un utilisateur, utilisez la commande `./adminUser.pl remove <login>` suivi de l'option -n si vous souhaitez vérifier ce que la commande fera avant de l'éxecuter réelement. Cette commande supprimera l'utilisateur et son dossier personnel, merci de vérifier qu'aucun fichier important ne s'y trouve.
+  Pour supprimer un utilisateur, utilisez la commande `./user.pl -remove <liste_des_login>`. Cette commande supprimera l'utilisateur et son dossier personnel après confirmation.
 
 - #### Modification des données d'un utilisateur :
 
-  Ce script vous permet, en plus de supprimer et ajouter des utilisateurs, de modifier leurs informations (mot de passe, répertoire personnel, langage de commade).
+  Ce script vous permet, en plus de supprimer et ajouter des utilisateurs, de modifier leurs informations (mot de passe, répertoire personnel, langage de commande).
 
-  Ces modifications sont appelées par une commande bien précise de la forme `./adminUser.pl modify login` suivi d'options selon l'information à modifier. Des exemples sont disponibles dans chaque sous-partie et vous pouvez bien sûr en utiliser plusieurs à la fois, du moment que vous respectez la syntaxe.
-
-  Remarque : L'option `-n` sera toujours indiquée en fin de commande.
+  Ces modifications sont appelées par une commande bien précise de la forme `./user.pl -modify <liste_des_login>` suivi d'options selon l'information à modifier. Les options seront alors pris en compte pour chaques utilisateurs de la liste. Pour modifier les informations, le programme vous demandera au préalable le mot de passe de chaque login.
 
   - ##### Mot de passe :
 
-    Pour modifier le mot de passe, on utilisera l'option `-p` suivie du nouveau mot de passe.
-
-    Exemple : `./adminUser.pl modify ferrot -p nouveauPass`.
+    Pour modifier le mot de passe, on appelera la commande comme telle : `./user.pl -modify <login>`.
+    Le script vous demande alors si vous souhaitez modifier votre mot de passe. Suivez ensuite les instructions.
 
   - ##### Répertoire de travail :
 
-    Pour modifier le répertoire de travail, on utilisera l'option `-d` suivie du nouveau répertoire personnel. L'ancien répertoire ne sera pas supprimé.
+    Pour modifier le répertoire de travail, on utilisera l'option `-home` suivie du nouveau répertoire personnel. L'ancien répertoire sera déplacé à l'emplacement spécifié et renommé avec ce même nouveau nom.
 
-    Exemple : `./adminUser.pl modify ferrot -d /home/tferro`.
+    Exemple : `./user.pl -modify <login> -home <nouveauDossier>`.
 
   - ##### Langage de commande :
 
-    Pour modifier le langage de commande, on utilisera l'option `-l` suivie du nouveau langage de commande.
+    Pour modifier le langage de commande, on utilisera l'option `-shell` suivie du nouveau langage de commande.
 
-    Exemple : `./adminUser.pl modify ferrot -l /bin/bash`.
-
-  Voici un exemple regroupant ces trois modifications : `./adminUser.pl modify ferrot -p nouveauPass -d /home/tferro -l /bin/bash`.
+    Exemple : `./user.pl -modify <login> -home <nouveauLangageDeCommande>`.
 
 ----------------------
 
