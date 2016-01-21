@@ -1,6 +1,6 @@
 # Projet Administration Système 1 - Outils d'administration d'utilisateurs UNIX
-## Thomas Ferro - DA2I 2015/2016
-
+## Julien Leleu - DA2I 2015/2016
+## Copyright : Inspiré du README de Thomas Ferro
 ----------------------
 
 ### Sommaire
@@ -33,39 +33,45 @@
  - [x] En ligne de commande
  - [x] Depuis un fichier
 - [x] Suppression utilisateur
-- [ ] Modification utilisateur
+- [x] Modification utilisateur
  - [x] Mot de passe
  - [x] Répertoire de travail
  - [x] Langage de commande
-
-Cf [fonctionnement ajout manuel d'utilisateur](http://www.linux-perl-c.lami20j.fr/contenu/affiche-linux_tuto-4-creation-manuelle-d-un-utilisateur-:-le-mecanisme.html).
 
 -----------------------
 
 ### Documentation utilisateur :
 
-- #### Ajout d'un (de plusieurs) utilisateur(s) :
-  Une fonction de base de ce script est l'ajout d'un ou de plusieurs utilisateur(s).
+- #### Ajout d'un ou de plusieurs utilisateur(s) :
+  La fonction de base du programme est de pouvoir ajouter des utilisateurs.
+  A l'appel de la commande d'ajout, le programme demande à l'utilisateur d'entrer un nouveau mot de passe et de le confirmer.
+  Vous pourrez le modifier par la suite.
 
-  Chaque utilisateur créer à pour mot de passe de base *pass*, vous pourrez le modifier par la suite.
-
-  La création d'utilisateur ne fait pas qu'ajouter ce dernier au système, elle créer aussi un répertoire **/home/<login>**, copie les fichiers d'initialisation du shell et change les droits et le propriétaire du dossier personnel.
+  La création d'utilisateur ne fait pas qu'ajouter ce dernier au système, elle créer aussi un répertoire **/home/<login>**, copie les fichiers d'initialisation du shell.
 
   Voici les différentes méthodes pour créer des utilisateurs :
 
   - ##### En ligne de commande :
+    Valeurs par défaut :
+    - Répertoire personnel : **/home/<login>**
+    - Langage de commande : **/bin/bash**
+    - Infos : **''**
+    - Uid : attribution automatique
+    - Gid : attribution automatique
 
-    Pour ajouter un ou plusieurs utilisateur(s) en ligne de commande, vous avez deux options : avec les logins directement inscrits dans la commande ou une version plus interactive.
+    Pour ajouter un ou plusieurs utilisateur(s) en ligne de commande, vous pouvez ajouter les logins directement avec les valeurs par défaut.
 
-    Dans sa version interactive, vous n'avez qu'à utiliser la commande `./adminUser.pl add` et vous laisser guider par les instructions.
+    Dans sa version par défaut, vous n'avez qu'à utiliser la commande `./user/pl add <liste_dutilisateurs>` et vous laisser guider par les instructions.
 
-    Dans la version en ligne de commande, vous utiliserez la commande `./adminUser.pl add <liste_d_utilisateurs>`. Les comptes seront créés directement.
+    Dans la version avec options, vous utiliserez la commande `./user.pl add <liste_d_utilisateurs> [-OPTIONS value]`.
 
  - ##### Depuis un fichier :
 
-    Vous pouvez, de plus, créer des utilisateurs à partir d'un fichier. Ce fichier devra respecter la norme suivante : il sera composé d'un utilisateur à ajouter au système par ligne. Chaque ligne respectera le format suivant : *login:repertoire_perso*. Si vous souhaitez utiliser le répertoire par défaut (*/home/login*), merci de bien vouloir indiquer tout de même les deux points.
+    Vous pouvez également créer des utilisateurs à partir d'un fichier. 
+    Ce fichier respectera la norme suivante : 
+    il sera composé d'un utilisateur à ajouter au système par ligne. Chaque ligne respectera le format suivant : *login*. 
 
-    La commande associée à la création d'utilisateurs par un fichier est la suivante : `./adminUser.pl add -f <fichier>`.
+    La commande associée à la création d'utilisateurs par un fichier est la suivante : `./user.pl -add -users <fichier> [-OPTIONS valeur]`.
 
 - #### Suppression d'un utilisateur :
 
