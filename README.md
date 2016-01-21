@@ -106,19 +106,19 @@
 
 - #### Ajout d'un (de plusieurs) utilisateur(s) :
 
-  Quelque soit la méthode de récupération des logins, la méthode d'ajout d'utilisateurs utilise une liste d'hashmaps. Pour chaque élément, cette méthode consiste à écrire la ligne correspondante dans les fichiers */etc/passwd* et */etc/shadow*. On créer ensuite le dossier personnel de l'utilisateur, on y copie les fichiers d'initialisation du shell puis on change les permissions et le propriétaire.
+  Quelque soit la méthode de récupération des logins, pour chaque utilisateurs, le script écrit la ligne correspondante dans les fichiers */etc/passwd* et */etc/shadow*. On crée ensuite le dossier personnel de l'utilisateur et on y copie les fichiers d'initialisation du shell.
 
   - ##### En ligne de commande :
 
-    Par la ligne de commande, les informations de l'utilisateur sont extraites puis envoyés dans un tableau d'hashmaps. Cette ligne est de la forme `./adminUser.pl add <login_1> <login_2> ... <login_n>`.
+    Par la ligne de commande, les logins sont stockés dans un tableau. Ils sont ensuite parcourus un à un. Ensuite, les informations de l'utilisateur sont extraites une a une et envoyées une à une dans les fichiers de configuration /etc/passwd /etc/shadow /etc/group. Cette ligne est de la forme `./user.pl -add <login_1> <login_2> ... <login_n> [-OPTIONS valeur]`.
 
   - ##### Depuis un fichier :
 
-    Depuis un fichier, on extrait les informations par un parcours de chaque ligne. On range ces données dans une hashmap puis on pousse cette dernière dans un tableau qui sera utilisé par la méthode d'ajout.
+    Depuis un fichier, on extrait les informations par un parcours de chaque ligne. On range la liste des logins dans un tableau, le même que pour celui en ligne de commande. On peut donc ajouter des utilisateurs par fichier ET par ligne de commande.
 
 - #### Suppression d'un utilisateur :
 
-  La commande `./adminUser.pl remove <login>` vérifie premièrement la présence de l'utilisateur grâce à la fonction Perl `getpwnam(<login>)` qui retourne les informations de l'utilisateur si il est présent dans le fichier */etc/passwd*. Si ce n'est pas le cas, le script s'arrête.
+  La commande `./user.pl -remove <login>` vérifie premièrement la présence de l'utilisateur grâce à la fonction Perl `getpwnam(<login>)` qui retourne les informations de l'utilisateur si il est présent dans le fichier */etc/passwd*. Si ce n'est pas le cas, le script s'arrête.
 
   Si l'utilisateur existe, on utilise la même technique pour supprimer la ligne correspondante à l'utilisateur dans les fichiers */etc/passwd*, */etc/shadow* et */etc/group*. Cette méthode consiste à ouvrir le fichier, recopier toutes les lignes dans une liste, de filtrer cette liste avec le nom de l'utilisateur avec la fonction `grep` puis de recopier la nouvelle liste en écrasant le fichier d'origine.
 
@@ -126,16 +126,16 @@
 
 - #### Modification des données d'un utilisateur :
 
-  Le principe de modification est toujours le même : cherche dans le fichier la ligne correspondante à l'utilisateur puis modifier cette ligne dans le champ à modifier. On ouvre donc le fichier, puis on utilise un `grep` pour trouver la ligne et un `split` pour décomposer cette ligne.
+  Le principe de modification est le suivant: On appelle supprime la ligne correspondante en gardant au préalable les informations qui seront inchangées, on ajoute ensuite avec la fonction d'ajout d'utilisateur la ligne correspondante avec les nouvelles valeurs. Cette manière de fonctionner pourrait être optimisée davantage, mais permet d'avoir un code plus "structuré" et davantage compréhensible.
 
   - ##### Mot de passe :
 
-    Le principe décrit plus haut est ici appliqué au fichier */etc/shadow*. On n'oublie pas de crypter le mot de passe en SHA-512 avec la commande `crypt(<password>, '$6$salt');`.
+    Le principe décrit plus haut est ici appliqué au fichier */etc/shadow*. Il faut crypter le mot de passe en SHA-512 avec la commande `crypt(<password>, '$6$salt');`.
 
   - ##### Répertoire de travail :
 
-    Pour changer le répertoire, on utilise là aussi la méthode, cette fois au fichier */etc/passwd*.
+    Pour changer le répertoire, on modifie la valeur du repertoire dans le fichier */etc/passwd*. On utilise ensuite la commande mv qui permet de déplacer un repertoire en perl.
 
   - ##### Langage de commande :
 
-    Enfin, pour changer le langage de commande, on demande le chemin vers ce dernier puis on utilise encore une fois le principe de modification encore une fois au fichier */etc/passwd*.
+    Pour modifier le langage de commande, on récupère la valeur de l'option correspondante avec le chemin vers ce dernier puis on utilise encore une fois le principe de modification sur le fichier */etc/passwd*.
